@@ -1,3 +1,4 @@
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -8,4 +9,5 @@ export default defineConfig({
     // koden kjører. Vercel kjører i UTC, telefonen står i Oslo.
     env: { TZ: "America/Los_Angeles" },
   },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "src") } },
 });

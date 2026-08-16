@@ -65,23 +65,24 @@ export async function login(
   const pin = String(formData.get("pin") ?? "");
   if (!pin) return { error: "Skriv inn koden." };
 
-  let valid = false;
+  // Både feil kode og manglende oppsett skal vises som tekst i skjemaet.
+  // Kaster vi her, får brukeren bare en tom 500-side og ingen anelse om hvorfor.
   try {
-    valid = checkPin(pin);
+    if (!checkPin(pin)) return { error: "Feil kode. Prøv igjen." };
+
+    const store = await cookies();
+    store.set(AUTH_COOKIE, await createSessionToken(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: AUTH_MAX_AGE,
+    });
   } catch (error) {
     return { error: messageOf(error) };
   }
-  if (!valid) return { error: "Feil kode. Prøv igjen." };
 
-  const store = await cookies();
-  store.set(AUTH_COOKIE, await createSessionToken(), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: AUTH_MAX_AGE,
-  });
-
+  // Utenfor try: redirect() kaster med vilje, og skal ikke fanges opp her.
   redirect("/");
 }
 
