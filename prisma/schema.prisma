@@ -32,34 +32,47 @@ model MealEntry {
   @@index([date])
 }
 
-model Notice {
-  id          String       @id @default(cuid())
-  date        DateTime     @db.Date
-  source      NoticeSource
-  text        String
-  createdBy   Member       @relation(fields: [createdById], references: [id])
-  createdById String
-  createdAt   DateTime     @default(now())
+/// Hvor beskjeden kommer fra. Familien kan legge til egne underveis, derfor en
+/// tabell og ikke en enum. `color` er en nøkkel inn i paletten i globals.css,
+/// ikke en hex-verdi — da slipper vi vilkårlige farger i databasen.
+model NoticeCategory {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("graa")
+  sortOrder Int      @default(100)
+  createdAt DateTime @default(now())
 
-  @@index([date])
+  notices        Notice[]
+  pendingNotices PendingNotice[]
+
+  @@index([sortOrder])
 }
 
-enum NoticeSource {
-  SKOLE
-  UNGDOMSSKOLE
-  BARNEHAGE
+model Notice {
+  id          String         @id @default(cuid())
+  date        DateTime       @db.Date
+  category    NoticeCategory @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  text        String
+  createdBy   Member         @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime       @default(now())
+
+  @@index([date])
+  @@index([categoryId])
 }
 
 /// Klargjort for automatisk uttrekk av beskjeder (e-post o.l.) i en senere versjon.
 /// Ingen UI eller logikk bruker denne modellen ennå.
 model PendingNotice {
-  id        String              @id @default(cuid())
-  date      DateTime            @db.Date
-  source    NoticeSource
-  text      String
-  rawSource String
-  status    PendingNoticeStatus @default(FORESLATT)
-  createdAt DateTime            @default(now())
+  id         String              @id @default(cuid())
+  date       DateTime            @db.Date
+  category   NoticeCategory?     @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  text       String
+  rawSource  String
+  status     PendingNoticeStatus @default(FORESLATT)
+  createdAt  DateTime            @default(now())
 
   @@index([status])
 }

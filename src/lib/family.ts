@@ -14,3 +14,16 @@ export const FAMILY = [
   { name: "Louis", isChild: true },
   { name: "Fiona", isChild: true },
 ] as const;
+
+/**
+ * Kategoriene appen starter med. Familien kan lage flere fra beskjedskjemaet,
+ * og de havner i samme tabell — dette er bare utgangspunktet.
+ * Id-ene er faste slik at seed og migrasjon peker på de samme radene.
+ */
+export const DEFAULT_CATEGORIES = [
+  { id: "kat_skole", name: "Skole", color: "blaa", sortOrder: 10 },
+  { id: "kat_ungdomsskole", name: "Ungdomsskole", color: "lilla", sortOrder: 20 },
+  { id: "kat_barnehage", name: "Barnehage", color: "gul", sortOrder: 30 },
+  { id: "kat_trening", name: "Trening", color: "gronn", sortOrder: 40 },
+  { id: "kat_generelt", name: "Generelt", color: "graa", sortOrder: 50 },
+] as const;

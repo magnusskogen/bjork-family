@@ -2,13 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { deleteNotice } from "../actions";
-import NoticePill from "@/components/notice-pill";
-import type { SourceKey } from "@/lib/format";
+import NoticePill, { type CategoryLite } from "@/components/notice-pill";
 
 export type NoticeRow = {
   id: string;
   dateLabel: string;
-  source: SourceKey;
+  category: CategoryLite;
   text: string;
   by: string;
   canDelete: boolean;
@@ -34,7 +33,7 @@ function Row({ notice }: { notice: NoticeRow }) {
       <div className="min-w-0 flex-1">
         <p className="text-[15px] text-ink-faint capitalize">{notice.dateLabel}</p>
         <div className="mt-1.5">
-          <NoticePill source={notice.source} text={notice.text} />
+          <NoticePill category={notice.category} text={notice.text} />
         </div>
         <p className="mt-2 text-[13px] text-ink-faint">Lagt inn av {notice.by}</p>
         {error ? (

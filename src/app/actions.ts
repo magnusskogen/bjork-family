@@ -11,7 +11,13 @@ import {
   createSessionToken,
 } from "@/lib/auth";
 import { assertEditable, dateOnly } from "@/lib/week";
-import { isSourceKey, relativeNorwegian } from "@/lib/format";
+import {
+  NEW_CATEGORY,
+  nextColor,
+  normaliseCategoryName,
+  relativeNorwegian,
+  sameCategoryName,
+} from "@/lib/format";
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -136,22 +142,72 @@ export async function saveMeal(input: {
 /* Beskjeder                                                           */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Finner kategorien beskjeden skal ha. Er det en ny, opprettes den her — men
+ * matcher navnet en som finnes fra før (uansett store bokstaver), gjenbrukes
+ * den i stedet for å lage en duplikat.
+ */
+async function resolveCategory(
+  categoryId: string,
+  newName: string,
+): Promise<{ id: string }> {
+  if (categoryId !== NEW_CATEGORY) {
+    const existing = await prisma.noticeCategory.findUnique({
+      where: { id: categoryId },
+      select: { id: true },
+    });
+    if (!existing) throw new Error("Ukjent kategori.");
+    return existing;
+  }
+
+  const name = normaliseCategoryName(newName);
+  if (!name) throw new Error("Gi den nye kategorien et navn.");
+  if (name.length > 40) throw new Error("Kategorinavnet er for langt.");
+
+  const all = await prisma.noticeCategory.findMany({
+    select: { id: true, name: true, color: true, sortOrder: true },
+  });
+
+  const match = all.find((category) => sameCategoryName(category.name, name));
+  if (match) return { id: match.id };
+
+  const created = await prisma.noticeCategory.create({
+    data: {
+      name,
+      color: nextColor(all.map((category) => category.color)),
+      sortOrder: Math.max(100, ...all.map((c) => c.sortOrder)) + 10,
+    },
+    select: { id: true },
+  });
+  return created;
+}
+
 export async function addNotice(
   _prev: unknown,
   formData: FormData,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; id?: string }> {
   const ymd = String(formData.get("date") ?? "");
-  const source = String(formData.get("source") ?? "");
+  const categoryId = String(formData.get("categoryId") ?? "");
+  const newCategory = String(formData.get("newCategory") ?? "");
   const text = String(formData.get("text") ?? "").trim();
   const memberId = String(formData.get("memberId") ?? "");
 
-  if (!isSourceKey(source)) return { ok: false, error: "Velg hvor beskjeden kommer fra." };
+  if (!categoryId) return { ok: false, error: "Velg hvor beskjeden kommer fra." };
   if (!text) return { ok: false, error: "Skriv inn beskjeden." };
 
+  let created: { id: string };
   try {
     const { date, member } = await validateWrite(ymd, memberId);
-    await prisma.notice.create({
-      data: { date, source, text: text.slice(0, 1000), createdById: member.id },
+    const category = await resolveCategory(categoryId, newCategory);
+
+    created = await prisma.notice.create({
+      data: {
+        date,
+        categoryId: category.id,
+        text: text.slice(0, 1000),
+        createdById: member.id,
+      },
+      select: { id: true },
     });
   } catch (error) {
     return { ok: false, error: messageOf(error) };
@@ -159,7 +215,8 @@ export async function addNotice(
 
   revalidatePath("/");
   revalidatePath("/beskjeder");
-  return { ok: true };
+  // Id-en brukes som React-nøkkel i skjemaet, så feltene tømmer seg selv.
+  return { ok: true, id: created.id };
 }
 
 export async function deleteNotice(id: string): Promise<ActionResult> {

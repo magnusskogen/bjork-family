@@ -1,7 +1,7 @@
 # Familien Bjørk
 
 En liten webapp for to ting: hva Olea og Louis skal ha med til mat hver dag, og
-beskjeder fra skole, ungdomsskole og barnehage.
+beskjeder fra skole, ungdomsskole, barnehage og hva familien ellers legger inn.
 
 Next.js (App Router) · TypeScript · Prisma mot Neon · Tailwind · Vercel.
 All skriving går gjennom server actions — ingen egne API-routes.
@@ -72,7 +72,7 @@ i sync, og `.env.local` vinner.
 ```bash
 npm install
 npm run db:deploy   # oppretter tabellene
-npm run db:seed     # legger inn Magnus, Julie, Olea, Louis og Fiona
+npm run db:seed     # familien og startkategoriene for beskjeder
 npm run dev
 ```
 
@@ -88,7 +88,7 @@ neste spør hvem du er.
 | `npm test`           | Enhetstester for ukelogikken                       |
 | `npm run db:migrate` | Ny migrasjon under utvikling (`prisma migrate dev`) |
 | `npm run db:deploy`  | Kjør migrasjoner (`prisma migrate deploy`)         |
-| `npm run db:seed`    | Legg inn familiemedlemmene (idempotent)            |
+| `npm run db:seed`    | Legg inn familie og startkategorier (idempotent)   |
 | `npm run db:studio`  | Prisma Studio                                      |
 
 ## Deploy på Vercel
@@ -130,15 +130,15 @@ Bytter du `AUTH_SECRET`, blir alle logget ut.
 ```
 prisma/
   schema.prisma          datamodell + migrasjoner
-  seed.ts                familiemedlemmene
+  seed.ts                familiemedlemmene og startkategoriene
 src/
   proxy.ts               sender uinnloggede til /login
   lib/
     week.ts              ukeregelen — brukes av både UI og server actions
     week.test.ts         enhetstester for ukeregelen
     auth.ts              PIN og signert cookie
-    family.ts            hvem som har med matpakke
-    format.ts            norske datoer og «Julie, i går»
+    family.ts            hvem som har med matpakke, og startkategoriene
+    format.ts            norske datoer, «Julie, i går», og fargevalg
   app/
     actions.ts           alt som skriver til databasen
     page.tsx             uka med matpakker
@@ -157,6 +157,23 @@ Fiona ligger i `Member` fordi barnehagen sender beskjeder, men hun har ingen
 matpakkefelt. Hvem som har med mat står i
 [`src/lib/family.ts`](src/lib/family.ts) — det eneste stedet familien er
 navngitt i koden.
+
+### Kategorier for beskjeder
+
+Kategoriene ligger i tabellen `NoticeCategory`, ikke i en enum, så familien kan
+lage nye selv. Velg «+ Ny kategori …» nederst i nedtrekkslista på
+`/beskjeder`, så dukker det opp et navnefelt i samme skjema. Appen starter med
+Skole, Ungdomsskole, Barnehage, Trening og Generelt.
+
+Nye kategorier får automatisk en ubrukt farge fra paletten i
+[`globals.css`](src/app/globals.css) (`.kategori[data-farge="…"]`). Fargen
+lagres som en nøkkel, ikke som en hex-verdi, så alle merkelapper holder seg
+innenfor paletten og leselighetskravet. Skriver du et navn som allerede finnes,
+gjenbrukes den kategorien uansett store og små bokstaver — «trening» og
+«Trening» blir ikke to.
+
+Det finnes ingen skjerm for å endre eller slette kategorier. Skriver du feil,
+må navnet rettes direkte i basen (`npm run db:studio`).
 
 `PendingNotice` står i schemaet uten UI eller logikk. Den er klargjort for
 automatisk uttrekk av beskjeder senere. I denne versjonen legges alt inn

@@ -1,9 +1,22 @@
 import { PrismaClient } from "@prisma/client";
-import { FAMILY } from "../src/lib/family";
+import { DEFAULT_CATEGORIES, FAMILY } from "../src/lib/family";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // Kategorier først — beskjeder peker på dem.
+  for (const category of DEFAULT_CATEGORIES) {
+    const existing = await prisma.noticeCategory.findUnique({
+      where: { id: category.id },
+    });
+    if (existing) {
+      console.log(`Kategorien ${category.name} finnes allerede`);
+      continue;
+    }
+    await prisma.noticeCategory.create({ data: { ...category } });
+    console.log(`La til kategorien ${category.name}`);
+  }
+
   for (const person of FAMILY) {
     const existing = await prisma.member.findFirst({
       where: { name: person.name },

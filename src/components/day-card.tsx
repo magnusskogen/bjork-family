@@ -1,7 +1,6 @@
 import MealField from "./meal-field";
-import NoticePill from "./notice-pill";
+import NoticePill, { type CategoryLite } from "./notice-pill";
 import { formatDayMonth, toYmd, weekdayName } from "@/lib/week";
-import type { SourceKey } from "@/lib/format";
 
 export type DayMeal = {
   childId: string;
@@ -12,7 +11,7 @@ export type DayMeal = {
 
 export type DayNotice = {
   id: string;
-  source: SourceKey;
+  category: CategoryLite;
   text: string;
 };
 
@@ -61,7 +60,7 @@ export default function DayCard({
         <ul className="mt-3 flex flex-wrap gap-1.5">
           {notices.map((notice) => (
             <li key={notice.id} className="max-w-full">
-              <NoticePill source={notice.source} text={notice.text} />
+              <NoticePill category={notice.category} text={notice.text} />
             </li>
           ))}
         </ul>

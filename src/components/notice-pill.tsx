@@ -1,23 +1,18 @@
-import { SOURCE_LABELS, type SourceKey } from "@/lib/format";
-
-const STYLES: Record<SourceKey, string> = {
-  SKOLE: "bg-skole-soft text-skole",
-  UNGDOMSSKOLE: "bg-ungdomsskole-soft text-ungdomsskole",
-  BARNEHAGE: "bg-barnehage-soft text-barnehage",
-};
+export type CategoryLite = { id: string; name: string; color: string };
 
 export default function NoticePill({
-  source,
+  category,
   text,
 }: {
-  source: SourceKey;
+  category: CategoryLite;
   text: string;
 }) {
   return (
     <span
-      className={`inline-flex max-w-full items-baseline gap-1.5 rounded-full px-3 py-1 text-[13px] leading-snug ${STYLES[source]}`}
+      className="kategori inline-flex max-w-full items-baseline gap-1.5 rounded-full px-3 py-1 text-[13px] leading-snug"
+      data-farge={category.color}
     >
-      <span className="font-medium">{SOURCE_LABELS[source]}</span>
+      <span className="font-medium">{category.name}</span>
       <span className="opacity-90">{text}</span>
     </span>
   );

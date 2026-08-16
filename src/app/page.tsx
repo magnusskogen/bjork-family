@@ -4,7 +4,7 @@ import AppShell from "@/components/app-shell";
 import DayCard, { type DayMeal, type DayNotice } from "@/components/day-card";
 import ScrollToToday from "@/components/scroll-to-today";
 import { MEAL_CHILD_NAMES } from "@/lib/family";
-import { relativeNorwegian, type SourceKey } from "@/lib/format";
+import { relativeNorwegian } from "@/lib/format";
 import {
   addDays,
   dateOnly,
@@ -55,8 +55,13 @@ export default async function Page({
     }),
     prisma.notice.findMany({
       where: { date: { gte: from, lte: to } },
-      select: { id: true, date: true, source: true, text: true },
-      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        date: true,
+        text: true,
+        category: { select: { id: true, name: true, color: true } },
+      },
+      orderBy: [{ category: { sortOrder: "asc" } }, { createdAt: "asc" }],
     }),
   ]);
 
@@ -78,7 +83,7 @@ export default async function Page({
     const list = noticesByDay.get(key) ?? [];
     list.push({
       id: notice.id,
-      source: notice.source as SourceKey,
+      category: notice.category,
       text: notice.text,
     });
     noticesByDay.set(key, list);
