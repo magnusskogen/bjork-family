@@ -20,7 +20,7 @@ export default function MealField({
   /** yyyy-MM-dd */
   date: string;
   initialText: string;
-  /** «Marte, i går» — regnet ut på serveren. */
+  /** «Julie, i går» — regnet ut på serveren. */
   initialMeta: string | null;
 }) {
   const { member, ready } = useMember();

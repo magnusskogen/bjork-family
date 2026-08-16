@@ -9,7 +9,7 @@ export const MEAL_CHILD_NAMES = ["Olea", "Louis"] as const;
 
 export const FAMILY = [
   { name: "Magnus", isChild: false },
-  { name: "Marte", isChild: false },
+  { name: "Julie", isChild: false },
   { name: "Olea", isChild: true },
   { name: "Louis", isChild: true },
   { name: "Fiona", isChild: true },

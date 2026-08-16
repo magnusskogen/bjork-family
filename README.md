@@ -62,12 +62,17 @@ cp .env.example .env.local
 openssl rand -base64 32   # bruk denne som AUTH_SECRET
 ```
 
+Hold deg til **én** env-fil. `next dev` leser `.env.local` av seg selv, men
+`prisma` og `tsx` gjør det ikke — derfor går alle `db:`-skriptene gjennom
+`dotenv -e .env.local`. Har du også en `.env` liggende, er det to steder å holde
+i sync, og `.env.local` vinner.
+
 ### 3. Installer, migrer, seed
 
 ```bash
 npm install
 npm run db:deploy   # oppretter tabellene
-npm run db:seed     # legger inn Magnus, Marte, Olea, Louis og Fiona
+npm run db:seed     # legger inn Magnus, Julie, Olea, Louis og Fiona
 npm run dev
 ```
 
@@ -133,7 +138,7 @@ src/
     week.test.ts         enhetstester for ukeregelen
     auth.ts              PIN og signert cookie
     family.ts            hvem som har med matpakke
-    format.ts            norske datoer og «Marte, i går»
+    format.ts            norske datoer og «Julie, i går»
   app/
     actions.ts           alt som skriver til databasen
     page.tsx             uka med matpakker

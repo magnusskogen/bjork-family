@@ -2,7 +2,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { TIME_ZONE, todayInOslo, toYmd, dateOnly } from "./week";
 
 /**
- * «Marte, i går» — kort og lavmælt. Regnes ut på serveren så teksten er lik
+ * «Julie, i går» — kort og lavmælt. Regnes ut på serveren så teksten er lik
  * uansett hva telefonen tror klokka er.
  */
 export function relativeNorwegian(when: Date, now: Date = new Date()): string {
