@@ -11,23 +11,35 @@ All skriving går gjennom server actions — ingen egne API-routes.
 Dette er den viktigste logikken i appen, og den bor ett sted:
 [`src/lib/week.ts`](src/lib/week.ts).
 
+Det er to regler, og begge har lørdag kl. 00:00 som vippepunkt. Tidssonen er
+alltid `Europe/Oslo`, og uka starter på mandag.
+
+**Hva kan redigeres** — `editableRange(now)`:
+
 > Inneværende uke kan alltid redigeres. Fra lørdag kl. 00:00 åpnes også neste uke.
 
-`editableRange(now)` gir mandag i inneværende uke, og søndag i inneværende uke —
-eller søndag i neste uke dersom `now` er lørdag eller søndag. Tidssonen er alltid
-`Europe/Oslo`, og uka starter på mandag.
-
-Funksjonen brukes to steder:
+Den gir mandag i inneværende uke, og søndag i inneværende uke — eller søndag i
+neste uke dersom `now` er lørdag eller søndag. Funksjonen brukes to steder:
 
 1. **I grensesnittet**, for å vise dager utenfor rekkevidde som read-only.
 2. **I hver eneste server action** (`src/app/actions.ts`), som en hard validering
    via `assertEditable()`. Datoen sjekkes mot serverens klokke. Klientens klokke
    og tidssone brukes ingen steder.
 
+**Hvilken uke som vises** — `defaultWeekStart(now)`:
+
+> Mandag til fredag ser man inneværende uke. Fra lørdag ser man neste uke.
+
+Åpner du appen en søndag, er mandag–fredag i inneværende uke allerede unnagjort,
+så det er neste uke du skal planlegge. Uka som vises er derfor alltid en uke du
+kan skrive i. Forrige uke er fortsatt ett trykk unna, og i helga er den fremdeles
+redigerbar. Samme regel styrer hvilken dato beskjedskjemaet foreslår.
+
 Enhetstestene i [`src/lib/week.test.ts`](src/lib/week.test.ts) kjører med
 `TZ=America/Los_Angeles` nettopp for å bevise at svaret ikke avhenger av hvor
-koden kjører. De dekker fredag, lørdag, søndag, mandag, midnattsovergangen
-lørdag kl. 00:00, årsskiftet 2026/2027 og sommertidsovergangen.
+koden kjører. De dekker begge reglene for fredag, lørdag, søndag og mandag,
+midnattsovergangen lørdag kl. 00:00, årsskiftet 2026/2027 og
+sommertidsovergangen — og at uka som vises alltid er redigerbar.
 
 ```bash
 npm test

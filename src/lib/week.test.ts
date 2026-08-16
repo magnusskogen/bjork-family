@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { editableRange, isEditable, toYmd, dateOnly, isoWeekNumber } from "./week";
+import {
+  dateOnly,
+  defaultWeekStart,
+  editableRange,
+  isEditable,
+  isoWeekNumber,
+  toYmd,
+} from "./week";
 
 /**
  * Testene kjører med TZ=America/Los_Angeles (se vitest.config.ts) nettopp for å
@@ -90,6 +97,49 @@ describe("editableRange", () => {
       start: "2026-03-23",
       end: "2026-04-05",
     });
+  });
+});
+
+describe("defaultWeekStart", () => {
+  const uke = (iso: string) => toYmd(defaultWeekStart(new Date(iso)));
+
+  it("viser inneværende uke mandag til fredag", () => {
+    expect(uke("2026-08-10T08:00:00+02:00")).toBe("2026-08-10"); // mandag
+    expect(uke("2026-08-12T08:00:00+02:00")).toBe("2026-08-10"); // onsdag
+    expect(uke("2026-08-14T08:00:00+02:00")).toBe("2026-08-10"); // fredag
+  });
+
+  it("hopper til neste uke fra lørdag", () => {
+    expect(uke("2026-08-15T08:00:00+02:00")).toBe("2026-08-17"); // lørdag
+    expect(uke("2026-08-16T08:00:00+02:00")).toBe("2026-08-17"); // søndag
+  });
+
+  it("bytter presis lørdag kl. 00:00 norsk tid", () => {
+    expect(uke("2026-08-14T23:59:00+02:00")).toBe("2026-08-10");
+    expect(uke("2026-08-15T00:00:00+02:00")).toBe("2026-08-17");
+  });
+
+  it("viser alltid en uke som kan redigeres", () => {
+    for (const iso of [
+      "2026-08-10T08:00:00+02:00",
+      "2026-08-14T23:59:00+02:00",
+      "2026-08-15T00:00:00+02:00",
+      "2026-08-16T20:00:00+02:00",
+      "2027-01-02T12:00:00+01:00",
+    ]) {
+      const now = new Date(iso);
+      const start = defaultWeekStart(now);
+      // Både mandag og fredag i uka som vises må være innenfor rekkevidde.
+      expect(isEditable(start, now)).toBe(true);
+      expect(isEditable(new Date(start.getTime() + 4 * 86400000), now)).toBe(true);
+    }
+  });
+
+  it("krysser årsskiftet", () => {
+    expect(uke("2027-01-01T12:00:00+01:00")).toBe("2026-12-28"); // fredag
+    expect(uke("2027-01-02T12:00:00+01:00")).toBe("2027-01-04"); // lørdag
+    expect(uke("2027-01-03T12:00:00+01:00")).toBe("2027-01-04"); // søndag
+    expect(uke("2027-01-04T12:00:00+01:00")).toBe("2027-01-04"); // mandag
   });
 });
 

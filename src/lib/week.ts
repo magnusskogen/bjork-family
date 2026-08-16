@@ -53,6 +53,21 @@ export function editableRange(now: Date): { start: Date; end: Date } {
   return { start, end };
 }
 
+/**
+ * Hvilken uke skal appen vise når man åpner den?
+ *
+ * Mandag til fredag: inneværende uke. Fra lørdag: neste uke — da er
+ * mandag–fredag i denne uka allerede unnagjort, og det er neste uke man
+ * planlegger. Samme skille som i `editableRange`, så uka man får se er alltid
+ * en uke man kan skrive i.
+ */
+export function defaultWeekStart(now: Date = new Date()): Date {
+  const today = todayInOslo(now);
+  const weekday = today.getUTCDay();
+  const isWeekend = weekday === 6 || weekday === 0; // lørdag eller søndag
+  return addDays(startOfWeekOslo(today), isWeekend ? 7 : 0);
+}
+
 /** Ligger datoen innenfor det som kan redigeres nå? */
 export function isEditable(date: Date, now: Date = new Date()): boolean {
   const { start, end } = editableRange(now);

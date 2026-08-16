@@ -8,6 +8,7 @@ import { relativeNorwegian } from "@/lib/format";
 import {
   addDays,
   dateOnly,
+  defaultWeekStart,
   isEditable,
   isoWeekNumber,
   startOfWeekOslo,
@@ -32,7 +33,7 @@ export default async function Page({
   const thisWeek = startOfWeekOslo(today);
 
   const { uke } = await searchParams;
-  const weekStart = resolveWeek(uke, thisWeek);
+  const weekStart = resolveWeek(uke, defaultWeekStart(now), thisWeek);
 
   const days = weekdaysOf(weekStart);
   const from = days[0];
@@ -136,14 +137,23 @@ export default async function Page({
   );
 }
 
-function resolveWeek(uke: string | undefined, fallback: Date): Date {
+/**
+ * `?uke=` styrer visningen, men bare innenfor rimelighetens grenser.
+ * Avstanden måles fra uka vi faktisk står i, ikke fra uka som vises som
+ * standard, slik at grensene ikke flytter seg i helga.
+ */
+function resolveWeek(
+  uke: string | undefined,
+  fallback: Date,
+  thisWeek: Date,
+): Date {
   if (!uke || !YMD.test(uke)) return fallback;
   const parsed = dateOnly(uke);
   if (Number.isNaN(parsed.getTime())) return fallback;
 
   const weekStart = startOfWeekOslo(parsed);
   const weeksAway = Math.round(
-    (weekStart.getTime() - fallback.getTime()) / (7 * 86400000),
+    (weekStart.getTime() - thisWeek.getTime()) / (7 * 86400000),
   );
   if (Math.abs(weeksAway) > MAX_WEEKS_AWAY) return fallback;
   return weekStart;

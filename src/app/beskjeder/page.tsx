@@ -3,6 +3,7 @@ import AppShell from "@/components/app-shell";
 import NoticeForm from "./notice-form";
 import NoticeList, { type NoticeRow } from "./notice-list";
 import {
+  defaultWeekStart,
   editableRange,
   formatLongDate,
   isEditable,
@@ -54,7 +55,11 @@ export default async function BeskjederPage() {
     .map(toRow);
 
   // Skjemaet tilbyr bare datoer som faktisk kan lagres. Serveren sjekker uansett.
-  const defaultDate = toYmd(today.getTime() >= start.getTime() ? today : start);
+  // I helga foreslår vi mandag i uka som kommer — samme skille som forsiden
+  // bruker, og beskjeder vises uansett bare på mandag–fredag.
+  const weekday = today.getUTCDay();
+  const inWeekend = weekday === 6 || weekday === 0;
+  const defaultDate = toYmd(inWeekend ? defaultWeekStart(now) : today);
 
   return (
     <AppShell>
