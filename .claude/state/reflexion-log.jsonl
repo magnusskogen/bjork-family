@@ -1,0 +1,1 @@
+{"ts": "2026-08-16T17:25:25Z", "tool": "Bash", "command_head": "cd /Users/magnus/Dev/bjork-family\npkill -f \"next dev -p 3111\" 2>/dev/null; pkill -f \"next start -p 3112\" 2>/dev/null\ndocker rm -f bjork-pg >/dev/null 2>&1 && ec", "exit_code": null, "stderr_head": null}

@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Member {
+  id       String  @id @default(cuid())
+  name     String
+  isChild  Boolean @default(false)
+
+  meals    MealEntry[] @relation("ChildMeals")
+  authored MealEntry[] @relation("MealAuthor")
+  notices  Notice[]
+}
+
+model MealEntry {
+  id          String   @id @default(cuid())
+  child       Member   @relation("ChildMeals", fields: [childId], references: [id], onDelete: Cascade)
+  childId     String
+  date        DateTime @db.Date
+  text        String
+  createdBy   Member   @relation("MealAuthor", fields: [createdById], references: [id])
+  createdById String
+  updatedAt   DateTime @updatedAt
+
+  @@unique([childId, date])
+  @@index([date])
+}
+
+model Notice {
+  id          String       @id @default(cuid())
+  date        DateTime     @db.Date
+  source      NoticeSource
+  text        String
+  createdBy   Member       @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime     @default(now())
+
+  @@index([date])
+}
+
+enum NoticeSource {
+  SKOLE
+  UNGDOMSSKOLE
+  BARNEHAGE
+}
+
+/// Klargjort for automatisk uttrekk av beskjeder (e-post o.l.) i en senere versjon.
+/// Ingen UI eller logikk bruker denne modellen ennå.
+model PendingNotice {
+  id        String              @id @default(cuid())
+  date      DateTime            @db.Date
+  source    NoticeSource
+  text      String
+  rawSource String
+  status    PendingNoticeStatus @default(FORESLATT)
+  createdAt DateTime            @default(now())
+
+  @@index([status])
+}
+
+enum PendingNoticeStatus {
+  FORESLATT
+  GODKJENT
+  AVVIST
+}

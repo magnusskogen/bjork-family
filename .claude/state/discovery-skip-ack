@@ -1,0 +1,13 @@
+2026-08-16
+
+Bruker valgte eksplisitt å hoppe over discovery for dette prosjektet.
+
+Brukerens egne ord (fra AskUserQuestion, svar: "Hopp over, bygg nå"):
+"Bygg en liten webapp for familien vår. Fem personer: to voksne (Magnus og
+Marte) og tre barn (Olea 11, Louis 13, og Fiona 2). Appen skal løse to ting:
+hva Olea og Louis skal ha med til mat hver dag, og beskjeder fra
+skole/ungdomsskole/barnehage."
+
+Begrunnelse: privat familieapp med fem kjente brukere og en fullt
+spesifisert kravliste (stack, datamodell, ukelogikk, skjermbilder, design).
+Discovery-intervjuet ville ikke tilført ny informasjon.
