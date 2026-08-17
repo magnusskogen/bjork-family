@@ -34,7 +34,7 @@ export default function DayCard({
     <article
       id={isToday ? "i-dag" : undefined}
       aria-labelledby={`dag-${ymd}`}
-      className={`scroll-mt-24 rounded-3xl border p-5 transition ${
+      className={`scroll-mt-24 rounded-3xl border p-4 transition ${
         isToday
           ? "border-accent/40 bg-card shadow-sm ring-1 ring-accent/15"
           : editable
@@ -57,7 +57,7 @@ export default function DayCard({
       </h3>
 
       {notices.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-1.5">
+        <ul className="mt-2 flex flex-wrap gap-1.5">
           {notices.map((notice) => (
             <li key={notice.id} className="max-w-full">
               <NoticePill category={notice.category} text={notice.text} />
@@ -66,7 +66,7 @@ export default function DayCard({
         </ul>
       ) : null}
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 space-y-3">
         {meals.map((meal) =>
           editable ? (
             <MealField
@@ -78,11 +78,11 @@ export default function DayCard({
               initialMeta={meal.meta}
             />
           ) : (
-            <div key={meal.childId}>
-              <p className="text-[15px] font-medium text-ink-soft">
+            <div key={meal.childId} className="flex gap-3">
+              <p className="w-14 shrink-0 text-sm font-medium text-ink-soft">
                 {meal.childName}
               </p>
-              <p className="mt-1 leading-relaxed whitespace-pre-wrap">
+              <p className="min-w-0 flex-1 text-[15px] leading-snug whitespace-pre-wrap">
                 {meal.text || <span className="text-ink-faint">Ikke fylt ut</span>}
               </p>
             </div>

@@ -96,7 +96,7 @@ export default async function Page({
     <AppShell>
       <WeekNav weekStart={weekStart} now={now} />
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5">
         {days.map((day) => {
           const key = toYmd(day);
           const dayMeals = mealsByDay.get(key);

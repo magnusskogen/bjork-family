@@ -90,40 +90,48 @@ export default function MealField({
 
   return (
     <div>
-      <label
-        htmlFor={fieldId}
-        className="text-[15px] font-medium text-ink-soft"
-      >
-        {childName}
-      </label>
+      <div className="flex items-baseline justify-between gap-3">
+        <label
+          htmlFor={fieldId}
+          className="shrink-0 text-sm font-medium text-ink-soft"
+        >
+          {childName}
+        </label>
+
+        {/*
+          «Julie, i går» ligger på samme linje som navnet i stedet for på en egen
+          linje under feltet. Det sparer en tekstlinje per barn per dag, altså ti
+          linjer i uka.
+        */}
+        <p
+          className="min-w-0 truncate text-[12px] text-ink-faint"
+          aria-live="polite"
+        >
+          {error ? (
+            <span className="text-red-700">{error}</span>
+          ) : status === "lagrer" ? (
+            "Lagrer …"
+          ) : status === "lagret" ? (
+            "Lagret"
+          ) : (
+            meta
+          )}
+        </p>
+      </div>
 
       <textarea
         id={fieldId}
         ref={textarea}
-        rows={2}
+        rows={1}
         value={text}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         onBlur={onBlur}
         placeholder="Hva skal med?"
         maxLength={500}
-        className="mt-1.5 block w-full resize-none rounded-2xl border border-line bg-paper px-4 py-3 leading-relaxed outline-none transition focus:border-accent focus:bg-card disabled:opacity-60"
+        // min-h-11 holder trykkflaten på 44 px selv med én linje tekst.
+        className="mt-1 block max-h-40 min-h-11 w-full resize-none overflow-y-auto rounded-xl border border-line bg-paper px-3 py-2 leading-snug outline-none transition focus:border-accent focus:bg-card disabled:opacity-60"
       />
-
-      <p
-        className="mt-1 min-h-5 px-1 text-[13px] text-ink-faint"
-        aria-live="polite"
-      >
-        {error ? (
-          <span className="text-red-700">{error}</span>
-        ) : status === "lagrer" ? (
-          "Lagrer …"
-        ) : status === "lagret" ? (
-          "Lagret"
-        ) : (
-          meta
-        )}
-      </p>
     </div>
   );
 }
