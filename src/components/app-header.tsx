@@ -12,6 +12,7 @@ export default function AppHeader() {
   const tabs = [
     { href: "/", label: "Matpakker" },
     { href: "/beskjeder", label: "Beskjeder" },
+    { href: "/faste", label: "Faste" },
   ];
 
   return (

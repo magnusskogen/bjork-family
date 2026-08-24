@@ -10,7 +10,8 @@ import {
   checkPin,
   createSessionToken,
 } from "@/lib/auth";
-import { assertEditable, dateOnly } from "@/lib/week";
+import { assertEditable, dateOnly, isWeekdayNumber } from "@/lib/week";
+import { normaliseTime, WHOLE_FAMILY } from "@/lib/routines";
 import {
   NEW_CATEGORY,
   nextColor,
@@ -41,13 +42,17 @@ async function validateWrite(ymd: string, memberId: string) {
 
   assertEditable(date, new Date());
 
+  return { date, member: await requireMember(memberId) };
+}
+
+/** Avsenderen må finnes i databasen. Gjelder også skriving uten dato. */
+async function requireMember(memberId: string) {
   const member = await prisma.member.findUnique({
     where: { id: memberId },
     select: { id: true, name: true },
   });
   if (!member) throw new Error("Ukjent bruker. Velg hvem du er på nytt.");
-
-  return { date, member };
+  return member;
 }
 
 function messageOf(error: unknown): string {
@@ -238,5 +243,80 @@ export async function deleteNotice(id: string): Promise<ActionResult> {
 
   revalidatePath("/");
   revalidatePath("/beskjeder");
+  return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* Faste avtaler                                                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * En fast avtale har ingen dato, så `assertEditable` har ingenting å si her.
+ * Den gjelder fra den legges inn til noen sletter den.
+ *
+ * `memberId` er den som legger inn avtalen, `subjectId` er den avtalen gjelder
+ * — samme skille som `createdById` og `memberId` i databasen.
+ */
+export async function addRoutine(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string; id?: string }> {
+  const weekday = Number(formData.get("weekday"));
+  const rawTime = String(formData.get("time") ?? "");
+  const text = String(formData.get("text") ?? "").trim();
+  const subjectId = String(formData.get("subjectId") ?? "");
+  const categoryId = String(formData.get("categoryId") ?? "");
+  const newCategory = String(formData.get("newCategory") ?? "");
+  const memberId = String(formData.get("memberId") ?? "");
+
+  if (!isWeekdayNumber(weekday)) return { ok: false, error: "Velg en ukedag." };
+  if (!categoryId) return { ok: false, error: "Velg en kategori." };
+  if (!text) return { ok: false, error: "Skriv hva avtalen er." };
+
+  const time = normaliseTime(rawTime);
+  if (!time.ok) {
+    return { ok: false, error: "Klokkeslettet må se ut som 19:30." };
+  }
+
+  let created: { id: string };
+  try {
+    const author = await requireMember(memberId);
+    const category = await resolveCategory(categoryId, newCategory);
+
+    // Hele familien lagres som ingen person, ikke som en egen rad i Member.
+    const subject =
+      subjectId === WHOLE_FAMILY ? null : (await requireMember(subjectId)).id;
+
+    created = await prisma.routine.create({
+      data: {
+        weekday,
+        time: time.time,
+        text: text.slice(0, 200),
+        memberId: subject,
+        categoryId: category.id,
+        createdById: author.id,
+      },
+      select: { id: true },
+    });
+  } catch (error) {
+    return { ok: false, error: messageOf(error) };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/faste");
+  return { ok: true, id: created.id };
+}
+
+export async function deleteRoutine(id: string): Promise<ActionResult> {
+  try {
+    // Ingen datosjekk: en fast avtale kan fjernes når som helst, og da
+    // forsvinner den fra alle uker framover.
+    await prisma.routine.delete({ where: { id } });
+  } catch {
+    return fail("Avtalen finnes ikke lenger.");
+  }
+
+  revalidatePath("/");
+  revalidatePath("/faste");
   return { ok: true };
 }

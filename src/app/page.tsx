@@ -2,9 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/app-shell";
 import DayCard, { type DayMeal, type DayNotice } from "@/components/day-card";
-import ScrollToToday from "@/components/scroll-to-today";
+import type { RoutineLite } from "@/components/routine-pill";
 import { MEAL_CHILD_NAMES } from "@/lib/family";
 import { relativeNorwegian } from "@/lib/format";
+import { compareRoutines } from "@/lib/routines";
 import {
   addDays,
   dateOnly,
@@ -14,8 +15,8 @@ import {
   startOfWeekOslo,
   todayInOslo,
   toYmd,
+  visibleWeekdays,
   weekLabel,
-  weekdaysOf,
 } from "@/lib/week";
 
 export const dynamic = "force-dynamic";
@@ -35,11 +36,11 @@ export default async function Page({
   const { uke } = await searchParams;
   const weekStart = resolveWeek(uke, defaultWeekStart(now), thisWeek);
 
-  const days = weekdaysOf(weekStart);
+  const days = visibleWeekdays(weekStart, now);
   const from = days[0];
-  const to = days[4];
+  const to = days[days.length - 1];
 
-  const [children, meals, notices] = await Promise.all([
+  const [children, meals, notices, routines] = await Promise.all([
     prisma.member.findMany({
       where: { name: { in: [...MEAL_CHILD_NAMES] } },
       select: { id: true, name: true },
@@ -64,6 +65,19 @@ export default async function Page({
       },
       orderBy: [{ category: { sortOrder: "asc" } }, { createdAt: "asc" }],
     }),
+    // Faste avtaler er regler uten dato, så de hentes for ukedagene som vises
+    // og gjentas i hver uke man blar til.
+    prisma.routine.findMany({
+      where: { weekday: { in: days.map((day) => day.getUTCDay()) } },
+      select: {
+        id: true,
+        weekday: true,
+        time: true,
+        text: true,
+        member: { select: { name: true } },
+        category: { select: { id: true, name: true, color: true } },
+      },
+    }),
   ]);
 
   // Behold rekkefølgen fra family.ts, ikke den databasen tilfeldigvis gir.
@@ -78,6 +92,20 @@ export default async function Page({
     mealsByDay.get(key)!.set(meal.childId, meal);
   }
 
+  const routinesByWeekday = new Map<number, RoutineLite[]>();
+  for (const routine of routines) {
+    const list = routinesByWeekday.get(routine.weekday) ?? [];
+    list.push({
+      id: routine.id,
+      time: routine.time,
+      who: routine.member?.name ?? null,
+      text: routine.text,
+      category: routine.category,
+    });
+    routinesByWeekday.set(routine.weekday, list);
+  }
+  for (const list of routinesByWeekday.values()) list.sort(compareRoutines);
+
   const noticesByDay = new Map<string, DayNotice[]>();
   for (const notice of notices) {
     const key = toYmd(notice.date);
@@ -89,8 +117,6 @@ export default async function Page({
     });
     noticesByDay.set(key, list);
   }
-
-  const showToday = days.some((day) => day.getTime() === today.getTime());
 
   return (
     <AppShell>
@@ -118,6 +144,7 @@ export default async function Page({
               key={key}
               date={day}
               meals={entries}
+              routines={routinesByWeekday.get(day.getUTCDay()) ?? []}
               notices={noticesByDay.get(key) ?? []}
               editable={isEditable(day, now)}
               isToday={day.getTime() === today.getTime()}
@@ -131,8 +158,6 @@ export default async function Page({
           Fant ingen barn i databasen. Kjør <code>npm run db:seed</code> først.
         </p>
       ) : null}
-
-      {showToday ? <ScrollToToday /> : null}
     </AppShell>
   );
 }

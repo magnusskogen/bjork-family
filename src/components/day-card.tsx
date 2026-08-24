@@ -1,5 +1,6 @@
 import MealField from "./meal-field";
 import NoticePill, { type CategoryLite } from "./notice-pill";
+import RoutinePill, { type RoutineLite } from "./routine-pill";
 import { formatDayMonth, toYmd, weekdayName } from "@/lib/week";
 
 export type DayMeal = {
@@ -18,12 +19,14 @@ export type DayNotice = {
 export default function DayCard({
   date,
   meals,
+  routines,
   notices,
   editable,
   isToday,
 }: {
   date: Date;
   meals: DayMeal[];
+  routines: RoutineLite[];
   notices: DayNotice[];
   editable: boolean;
   isToday: boolean;
@@ -32,9 +35,8 @@ export default function DayCard({
 
   return (
     <article
-      id={isToday ? "i-dag" : undefined}
       aria-labelledby={`dag-${ymd}`}
-      className={`scroll-mt-24 rounded-3xl border p-4 transition ${
+      className={`rounded-3xl border p-4 transition ${
         isToday
           ? "border-accent/40 bg-card shadow-sm ring-1 ring-accent/15"
           : editable
@@ -56,8 +58,13 @@ export default function DayCard({
         ) : null}
       </h3>
 
-      {notices.length > 0 ? (
+      {routines.length > 0 || notices.length > 0 ? (
         <ul className="mt-2 flex flex-wrap gap-1.5">
+          {routines.map((routine) => (
+            <li key={routine.id} className="max-w-full">
+              <RoutinePill routine={routine} />
+            </li>
+          ))}
           {notices.map((notice) => (
             <li key={notice.id} className="max-w-full">
               <NoticePill category={notice.category} text={notice.text} />

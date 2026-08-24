@@ -94,6 +94,23 @@ export function weekdaysOf(weekStart: Date): Date[] {
 }
 
 /**
+ * Dagene som faktisk skal vises for uka som starter på `weekStart`.
+ *
+ * En dag som er over er det ingen vits i å vise, så inneværende uke begynner
+ * på i dag. Uker som ligger helt bak oss vises i sin helhet — der er
+ * alternativet en tom side.
+ */
+export function visibleWeekdays(
+  weekStart: Date,
+  now: Date = new Date(),
+): Date[] {
+  const days = weekdaysOf(weekStart);
+  const today = todayInOslo(now).getTime();
+  const remaining = days.filter((day) => day.getTime() >= today);
+  return remaining.length > 0 ? remaining : days;
+}
+
+/**
  * Etikett for ukevelgeren, relativt til uka vi står i nå.
  * Uker lenger unna får datointervall i stedet for navn.
  */
@@ -159,6 +176,23 @@ export function formatLongDate(date: Date): string {
 
 export function weekdayName(date: Date): string {
   return WEEKDAYS[date.getUTCDay()];
+}
+
+/**
+ * Ukedagene appen jobber med, mandag til fredag. Tallene er de samme som
+ * `Date.getUTCDay()` gir, så en fast avtale kan sammenlignes rett mot en dato.
+ */
+export const WEEKDAYS_MON_FRI = [1, 2, 3, 4, 5] as const;
+
+export type WeekdayNumber = (typeof WEEKDAYS_MON_FRI)[number];
+
+export function isWeekdayNumber(value: number): value is WeekdayNumber {
+  return (WEEKDAYS_MON_FRI as readonly number[]).includes(value);
+}
+
+/** «mandag» for 1, «fredag» for 5. */
+export function weekdayNameOf(weekday: number): string {
+  return WEEKDAYS[weekday] ?? "";
 }
 
 /** ISO-ukenummer, kun til visning i toppen av uka. */

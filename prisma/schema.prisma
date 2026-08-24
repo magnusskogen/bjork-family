@@ -9,13 +9,16 @@ datasource db {
 }
 
 model Member {
-  id       String  @id @default(cuid())
-  name     String
-  isChild  Boolean @default(false)
+  id      String  @id @default(cuid())
+  name    String
+  isChild Boolean @default(false)
 
   meals    MealEntry[] @relation("ChildMeals")
   authored MealEntry[] @relation("MealAuthor")
   notices  Notice[]
+
+  routines         Routine[] @relation("RoutineMember")
+  authoredRoutines Routine[] @relation("RoutineAuthor")
 }
 
 model MealEntry {
@@ -44,6 +47,7 @@ model NoticeCategory {
 
   notices        Notice[]
   pendingNotices PendingNotice[]
+  routines       Routine[]
 
   @@index([sortOrder])
 }
@@ -59,6 +63,40 @@ model Notice {
   createdAt   DateTime       @default(now())
 
   @@index([date])
+  @@index([categoryId])
+}
+
+/// En avtale som gjentar seg hver uke — trening, korps, svømming.
+///
+/// Lagres som en regel (ukedag + klokkeslett), ikke som én rad per dato. Da
+/// gjelder den til noen fjerner den, og forsiden regner ut forekomstene når
+/// uka vises. Prisen er at én enkelt gang ikke kan avlyses; det får bli en
+/// vanlig beskjed i stedet.
+model Routine {
+  id String @id @default(cuid())
+
+  /// 1 = mandag ... 5 = fredag. Samme dager som forsiden viser.
+  weekday Int
+
+  /// «HH:MM» i norsk tid, eller null for avtaler uten fast klokkeslett.
+  /// Tekst og ikke DateTime — et klokkeslett uten dato er ikke et tidspunkt,
+  /// og en `time`-kolonne ville dratt med seg tidssonespørsmål vi ikke har.
+  time String?
+
+  text String
+
+  /// Hvem det gjelder. Null betyr hele familien.
+  member   Member? @relation("RoutineMember", fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String?
+
+  category   NoticeCategory @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  createdBy   Member   @relation("RoutineAuthor", fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([weekday])
   @@index([categoryId])
 }
 

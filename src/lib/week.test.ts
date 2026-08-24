@@ -6,6 +6,7 @@ import {
   isEditable,
   isoWeekNumber,
   toYmd,
+  visibleWeekdays,
 } from "./week";
 
 /**
@@ -140,6 +141,56 @@ describe("defaultWeekStart", () => {
     expect(uke("2027-01-02T12:00:00+01:00")).toBe("2027-01-04"); // lørdag
     expect(uke("2027-01-03T12:00:00+01:00")).toBe("2027-01-04"); // søndag
     expect(uke("2027-01-04T12:00:00+01:00")).toBe("2027-01-04"); // mandag
+  });
+});
+
+describe("visibleWeekdays", () => {
+  const dager = (weekStart: string, iso: string) =>
+    visibleWeekdays(dateOnly(weekStart), new Date(iso)).map(toYmd);
+
+  it("viser hele uka på mandagen", () => {
+    expect(dager("2026-08-10", "2026-08-10T08:00:00+02:00")).toEqual([
+      "2026-08-10",
+      "2026-08-11",
+      "2026-08-12",
+      "2026-08-13",
+      "2026-08-14",
+    ]);
+  });
+
+  it("dropper dagene som er over", () => {
+    // Onsdag: mandag og tirsdag er unnagjort.
+    expect(dager("2026-08-10", "2026-08-12T08:00:00+02:00")).toEqual([
+      "2026-08-12",
+      "2026-08-13",
+      "2026-08-14",
+    ]);
+  });
+
+  it("beholder dagen ut, ikke bare det som er igjen av den", () => {
+    // Fredag kveld: fredagen står fortsatt.
+    expect(dager("2026-08-10", "2026-08-14T23:30:00+02:00")).toEqual([
+      "2026-08-14",
+    ]);
+  });
+
+  it("bruker norsk kalenderdag, ikke UTC-dagen", () => {
+    // 2026-08-11T22:30Z er tirsdag i UTC, men allerede onsdag 00:30 i Oslo.
+    expect(dager("2026-08-10", "2026-08-11T22:30:00Z")).toEqual([
+      "2026-08-12",
+      "2026-08-13",
+      "2026-08-14",
+    ]);
+  });
+
+  it("viser hele uka når den ligger fram i tid", () => {
+    expect(dager("2026-08-17", "2026-08-12T08:00:00+02:00")).toHaveLength(5);
+  });
+
+  it("viser hele uka når den er helt forbi, framfor ingenting", () => {
+    // Forrige uke, og uka man står i sett fra helga.
+    expect(dager("2026-08-03", "2026-08-12T08:00:00+02:00")).toHaveLength(5);
+    expect(dager("2026-08-10", "2026-08-15T08:00:00+02:00")).toHaveLength(5);
   });
 });
 
