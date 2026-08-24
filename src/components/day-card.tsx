@@ -14,6 +14,7 @@ export type DayNotice = {
   id: string;
   category: CategoryLite;
   text: string;
+  who: string | null;
 };
 
 export default function DayCard({
@@ -67,7 +68,11 @@ export default function DayCard({
           ))}
           {notices.map((notice) => (
             <li key={notice.id} className="max-w-full">
-              <NoticePill category={notice.category} text={notice.text} />
+              <NoticePill
+                category={notice.category}
+                text={notice.text}
+                who={notice.who}
+              />
             </li>
           ))}
         </ul>

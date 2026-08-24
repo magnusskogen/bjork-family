@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const setCookie = vi.fn();
+// actions.ts drar inn lekseplan-avlesingen, som er merket "server-only".
+vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ set: setCookie, delete: vi.fn() }) }));
 vi.mock("next/navigation", () => ({

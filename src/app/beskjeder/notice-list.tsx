@@ -9,6 +9,7 @@ export type NoticeRow = {
   dateLabel: string;
   category: CategoryLite;
   text: string;
+  who: string | null;
   by: string;
   canDelete: boolean;
 };
@@ -33,7 +34,11 @@ function Row({ notice }: { notice: NoticeRow }) {
       <div className="min-w-0 flex-1">
         <p className="text-[15px] text-ink-faint capitalize">{notice.dateLabel}</p>
         <div className="mt-1.5">
-          <NoticePill category={notice.category} text={notice.text} />
+          <NoticePill
+            category={notice.category}
+            text={notice.text}
+            who={notice.who}
+          />
         </div>
         <p className="mt-2 text-[13px] text-ink-faint">Lagt inn av {notice.by}</p>
         {error ? (

@@ -1,2 +1,3 @@
 {"ts": "2026-08-16T17:25:25Z", "tool": "Bash", "command_head": "cd /Users/magnus/Dev/bjork-family\npkill -f \"next dev -p 3111\" 2>/dev/null; pkill -f \"next start -p 3112\" 2>/dev/null\ndocker rm -f bjork-pg >/dev/null 2>&1 && ec", "exit_code": null, "stderr_head": null}
 {"ts": "2026-08-16T18:05:18Z", "tool": "Bash", "command_head": "env -u DATABASE_URL -u DIRECT_URL -u FAMILY_PIN -u AUTH_SECRET npx next dev -p 3113 > /private/tmp/claude-501/-Users-magnus-Dev-bjork-family/660b0264-4165-4284-", "exit_code": null, "stderr_head": null}
+{"ts": "2026-08-24T19:15:55Z", "tool": "Bash", "command_head": "grep -A9 '\"dependencies\"' package.json; node -e \"console.log(require('@anthropic-ai/sdk/package.json').version)\"", "exit_code": null, "stderr_head": null}

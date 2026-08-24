@@ -3,9 +3,12 @@ export type CategoryLite = { id: string; name: string; color: string };
 export default function NoticePill({
   category,
   text,
+  who = null,
 }: {
   category: CategoryLite;
   text: string;
+  /** Hvem beskjeden gjelder. Null betyr hele familien. */
+  who?: string | null;
 }) {
   return (
     <span
@@ -13,6 +16,7 @@ export default function NoticePill({
       data-farge={category.color}
     >
       <span className="font-medium">{category.name}</span>
+      {who ? <span className="font-medium opacity-75">{who}</span> : null}
       <span className="opacity-90">{text}</span>
     </span>
   );

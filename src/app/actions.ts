@@ -10,7 +10,14 @@ import {
   checkPin,
   createSessionToken,
 } from "@/lib/auth";
-import { assertEditable, dateOnly, isWeekdayNumber } from "@/lib/week";
+import {
+  addDays,
+  assertEditable,
+  dateOnly,
+  editableRange,
+  isWeekdayNumber,
+} from "@/lib/week";
+import { readHomeworkPlan } from "@/lib/homework";
 import { normaliseTime, WHOLE_FAMILY } from "@/lib/routines";
 import {
   NEW_CATEGORY,
@@ -196,6 +203,7 @@ export async function addNotice(
   const categoryId = String(formData.get("categoryId") ?? "");
   const newCategory = String(formData.get("newCategory") ?? "");
   const text = String(formData.get("text") ?? "").trim();
+  const subjectId = String(formData.get("subjectId") ?? "");
   const memberId = String(formData.get("memberId") ?? "");
 
   if (!categoryId) return { ok: false, error: "Velg hvor beskjeden kommer fra." };
@@ -205,12 +213,17 @@ export async function addNotice(
   try {
     const { date, member } = await validateWrite(ymd, memberId);
     const category = await resolveCategory(categoryId, newCategory);
+    const subject =
+      subjectId === WHOLE_FAMILY || !subjectId
+        ? null
+        : (await requireMember(subjectId)).id;
 
     created = await prisma.notice.create({
       data: {
         date,
         categoryId: category.id,
         text: text.slice(0, 1000),
+        memberId: subject,
         createdById: member.id,
       },
       select: { id: true },
@@ -320,3 +333,152 @@ export async function deleteRoutine(id: string): Promise<ActionResult> {
   revalidatePath("/faste");
   return { ok: true };
 }
+
+/* ------------------------------------------------------------------ */
+/* Lekseplaner                                                         */
+/* ------------------------------------------------------------------ */
+
+/** Filtypene en lekseplan kommer i. Alt annet avvises før vi bruker penger. */
+const PLAN_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const MAX_PLAN_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Leser en opplastet lekseplan og lagrer det som ble funnet som forslag.
+ *
+ * Ingenting havner i kalenderen her. Uttrekket er gjort av en språkmodell, og
+ * planene sier sjelden hvilken dag leksa hører til — begge deler krever at et
+ * menneske ser over før noe lagres som beskjed.
+ */
+export async function readPlan(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ ok: boolean; error?: string; found?: number }> {
+  const file = formData.get("plan");
+  const childId = String(formData.get("childId") ?? "");
+  const categoryId = String(formData.get("categoryId") ?? "");
+  const memberId = String(formData.get("memberId") ?? "");
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Velg en fil først." };
+  }
+  if (!PLAN_TYPES.includes(file.type)) {
+    return { ok: false, error: "Filen må være et bilde eller en PDF." };
+  }
+  if (file.size > MAX_PLAN_BYTES) {
+    return { ok: false, error: "Filen er for stor. Maks 8 MB." };
+  }
+
+  let found: number;
+  try {
+    await requireMember(memberId);
+    const child = await requireMember(childId);
+    const category = await resolveCategory(categoryId, "");
+
+    const data = Buffer.from(await file.arrayBuffer()).toString("base64");
+    const { rows, raw } = await readHomeworkPlan({ data, mediaType: file.type });
+
+    if (rows.length === 0) {
+      return { ok: false, error: "Fant ingen lekser i denne planen." };
+    }
+
+    // Dagen modellen fant er relativ til uka planen gjelder. Vi regner den ut
+    // fra uka man står i nå — det er den uka en fersk lekseplan handler om.
+    const thisWeek = editableRange(new Date()).start;
+
+    await prisma.pendingNotice.createMany({
+      data: rows.map((row) => ({
+        date: row.weekday === null ? null : addDays(thisWeek, row.weekday - 1),
+        subject: row.subject || null,
+        categoryId: category.id,
+        text: row.task,
+        memberId: child.id,
+        rawSource: raw,
+      })),
+    });
+
+    found = rows.length;
+  } catch (error) {
+    return { ok: false, error: messageOf(error) };
+  }
+
+  revalidatePath("/lekseplan");
+  return { ok: true, found };
+}
+
+/**
+ * Gjør godkjente forslag om til beskjeder. Datoen kommer fra skjemaet, ikke fra
+ * forslaget — den som ser over har siste ord om hvilken dag leksa hører til.
+ */
+export async function approveProposals(
+  input: { id: string; date: string }[],
+  memberId: string,
+): Promise<ActionResult<{ added: number }>> {
+  let added = 0;
+  try {
+    const author = await requireMember(memberId);
+
+    for (const item of input) {
+      const proposal = await prisma.pendingNotice.findUnique({
+        where: { id: item.id },
+        select: {
+          id: true,
+          subject: true,
+          text: true,
+          categoryId: true,
+          memberId: true,
+          status: true,
+        },
+      });
+      if (!proposal || proposal.status !== "FORESLATT") continue;
+      if (!proposal.categoryId) throw new Error("Forslaget mangler kategori.");
+
+      const { date } = await validateWrite(item.date, author.id);
+
+      // Faget er ledetekst, ikke egen kategori — ellers får vi én kategori per
+      // skolefag, og fargepaletten mister mening.
+      const text = proposal.subject
+        ? `${proposal.subject}: ${proposal.text}`
+        : proposal.text;
+
+      await prisma.$transaction([
+        prisma.notice.create({
+          data: {
+            date,
+            categoryId: proposal.categoryId,
+            text: text.slice(0, 1000),
+            memberId: proposal.memberId,
+            createdById: author.id,
+          },
+        }),
+        prisma.pendingNotice.update({
+          where: { id: proposal.id },
+          data: { status: "GODKJENT" },
+        }),
+      ]);
+      added += 1;
+    }
+  } catch (error) {
+    return fail(messageOf(error));
+  }
+
+  revalidatePath("/");
+  revalidatePath("/beskjeder");
+  revalidatePath("/lekseplan");
+  return { ok: true, added };
+}
+
+/** Forkaster forslag. De blir liggende som AVVIST, ikke slettet. */
+export async function rejectProposals(ids: string[]): Promise<ActionResult> {
+  try {
+    await prisma.pendingNotice.updateMany({
+      where: { id: { in: ids }, status: "FORESLATT" },
+      data: { status: "AVVIST" },
+    });
+  } catch (error) {
+    return fail(messageOf(error));
+  }
+
+  revalidatePath("/lekseplan");
+  return { ok: true };
+}
+

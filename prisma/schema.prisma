@@ -19,6 +19,9 @@ model Member {
 
   routines         Routine[] @relation("RoutineMember")
   authoredRoutines Routine[] @relation("RoutineAuthor")
+
+  aboutNotices        Notice[]        @relation("NoticeMember")
+  aboutPendingNotices PendingNotice[] @relation("PendingNoticeMember")
 }
 
 model MealEntry {
@@ -53,14 +56,20 @@ model NoticeCategory {
 }
 
 model Notice {
-  id          String         @id @default(cuid())
-  date        DateTime       @db.Date
-  category    NoticeCategory @relation(fields: [categoryId], references: [id])
-  categoryId  String
-  text        String
-  createdBy   Member         @relation(fields: [createdById], references: [id])
+  id         String         @id @default(cuid())
+  date       DateTime       @db.Date
+  category   NoticeCategory @relation(fields: [categoryId], references: [id])
+  categoryId String
+  text       String
+
+  /// Hvem beskjeden gjelder. Null betyr hele familien. Med to skolebarn er
+  /// «gjør ferdig arket» meningsløst uten et navn på.
+  member   Member? @relation("NoticeMember", fields: [memberId], references: [id], onDelete: SetNull)
+  memberId String?
+
+  createdBy   Member   @relation(fields: [createdById], references: [id])
   createdById String
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([date])
   @@index([categoryId])
@@ -100,17 +109,34 @@ model Routine {
   @@index([categoryId])
 }
 
-/// Klargjort for automatisk uttrekk av beskjeder (e-post o.l.) i en senere versjon.
-/// Ingen UI eller logikk bruker denne modellen ennå.
+/// Et forslag til beskjed som er lest ut av en opplastet lekseplan.
+///
+/// Ingenting havner i kalenderen uten at et menneske har sett på det: uttrekket
+/// lages av en språkmodell, og planene sier sjelden hvilken dag leksa hører til.
+/// Derfor er dette et eget mellomsteg og ikke en Notice med det samme.
 model PendingNotice {
-  id         String              @id @default(cuid())
-  date       DateTime            @db.Date
-  category   NoticeCategory?     @relation(fields: [categoryId], references: [id])
+  id String @id @default(cuid())
+
+  /// Dagen leksa hører til, når planen faktisk sier det («til fredag»).
+  /// Null betyr at ingen dag var oppgitt, og at et menneske må velge.
+  date DateTime? @db.Date
+
+  /// Faget raden kom fra — «Matte», «Tysk». Blir ledetekst i beskjeden.
+  subject String?
+
+  category   NoticeCategory? @relation(fields: [categoryId], references: [id])
   categoryId String?
   text       String
-  rawSource  String
-  status     PendingNoticeStatus @default(FORESLATT)
-  createdAt  DateTime            @default(now())
+
+  /// Hvem planen gjaldt. Velges ved opplasting, ikke av modellen.
+  member   Member? @relation("PendingNoticeMember", fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String?
+
+  /// Rådataene modellen svarte med. Ligger her så en rar tolkning kan
+  /// ettergås uten å laste opp planen på nytt.
+  rawSource String
+  status    PendingNoticeStatus @default(FORESLATT)
+  createdAt DateTime            @default(now())
 
   @@index([status])
 }

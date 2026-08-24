@@ -111,6 +111,25 @@ export function visibleWeekdays(
 }
 
 /**
+ * Hverdagene som kan skrives til akkurat nå, med ferdig etikett.
+ * Brukes av lekseplanen, der man velger dag for hver lekse.
+ */
+export function editableWeekdays(
+  now: Date = new Date(),
+): { ymd: string; label: string }[] {
+  const { start, end } = editableRange(now);
+  const days: { ymd: string; label: string }[] = [];
+  for (let day = start; day <= end; day = addDays(day, 1)) {
+    if (!isWeekdayNumber(day.getUTCDay())) continue;
+    days.push({
+      ymd: toYmd(day),
+      label: `${weekdayName(day)} ${formatDayMonth(day)}`,
+    });
+  }
+  return days;
+}
+
+/**
  * Etikett for ukevelgeren, relativt til uka vi står i nå.
  * Uker lenger unna får datointervall i stedet for navn.
  */

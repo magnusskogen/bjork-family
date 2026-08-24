@@ -16,12 +16,14 @@
     "db:studio": "dotenv -e .env.local -- prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@prisma/client": "^6.19.3",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "next": "16.3.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

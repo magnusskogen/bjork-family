@@ -2,11 +2,16 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { addNotice } from "../actions";
+import { addRoutine } from "../actions";
 import { useMember } from "@/components/member-context";
 import { NEW_CATEGORY } from "@/lib/format";
 import { WHOLE_FAMILY } from "@/lib/routines";
+import { WEEKDAYS_MON_FRI, weekdayNameOf } from "@/lib/week";
 import type { CategoryLite } from "@/components/notice-pill";
+
+const field =
+  "mt-1.5 block w-full rounded-2xl border border-line bg-paper px-4 py-3 outline-none focus:border-accent";
+const label = "text-[15px] font-medium text-ink-soft";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -16,39 +21,30 @@ function SubmitButton() {
       disabled={pending}
       className="mt-5 w-full rounded-2xl bg-accent px-6 py-4 text-lg font-medium text-white transition active:scale-[0.99] disabled:opacity-50"
     >
-      {pending ? "Lagrer …" : "Legg til beskjed"}
+      {pending ? "Lagrer …" : "Legg til fast avtale"}
     </button>
   );
 }
 
-export default function NoticeForm({
+export default function RoutineForm({
   categories,
-  minDate,
-  maxDate,
-  defaultDate,
+  defaultWeekday,
 }: {
   categories: CategoryLite[];
-  minDate: string;
-  maxDate: string;
-  defaultDate: string;
+  defaultWeekday: number;
 }) {
   const { member, ready } = useMember();
-  const [state, formAction] = useActionState(addNotice, { ok: false });
+  const [state, formAction] = useActionState(addRoutine, { ok: false });
 
   return (
     <form action={formAction} className="rounded-3xl bg-card p-5">
       <input type="hidden" name="memberId" value={member?.id ?? ""} />
 
-      {/*
-        Nøkkelen bytter hver gang en beskjed er lagret. Da monteres feltene på
-        nytt og tømmer seg selv — enklere enn å nullstille dem for hånd.
-      */}
+      {/* Samme knep som i beskjedskjemaet: ny nøkkel etter lagring tømmer feltene. */}
       <Fields
         key={state.ok ? state.id : "start"}
         categories={categories}
-        minDate={minDate}
-        maxDate={maxDate}
-        defaultDate={defaultDate}
+        defaultWeekday={defaultWeekday}
       />
 
       {state.error ? (
@@ -68,14 +64,10 @@ export default function NoticeForm({
 
 function Fields({
   categories,
-  minDate,
-  maxDate,
-  defaultDate,
+  defaultWeekday,
 }: {
   categories: CategoryLite[];
-  minDate: string;
-  maxDate: string;
-  defaultDate: string;
+  defaultWeekday: number;
 }) {
   const { members } = useMember();
   const [makingNew, setMakingNew] = useState(false);
@@ -89,27 +81,57 @@ function Fields({
     <>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="date" className="text-[15px] font-medium text-ink-soft">
-            Dato
+          <label htmlFor="subjectId" className={label}>
+            Hvem
           </label>
-          <input
-            id="date"
-            name="date"
-            type="date"
+          <select
+            id="subjectId"
+            name="subjectId"
             required
-            min={minDate}
-            max={maxDate}
-            defaultValue={defaultDate}
-            className="mt-1.5 block w-full rounded-2xl border border-line bg-paper px-4 py-3 outline-none focus:border-accent"
-          />
+            defaultValue={WHOLE_FAMILY}
+            className={field}
+          >
+            <option value={WHOLE_FAMILY}>Hele familien</option>
+            {members.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
-          <label
-            htmlFor="categoryId"
-            className="text-[15px] font-medium text-ink-soft"
+          <label htmlFor="weekday" className={label}>
+            Dag
+          </label>
+          <select
+            id="weekday"
+            name="weekday"
+            required
+            defaultValue={defaultWeekday}
+            className={`${field} capitalize`}
           >
-            Hvor fra
+            {WEEKDAYS_MON_FRI.map((weekday) => (
+              <option key={weekday} value={weekday}>
+                {weekdayNameOf(weekday)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="time" className={label}>
+            Klokka
+          </label>
+          <input id="time" name="time" type="time" className={field} />
+          <p className="mt-1 px-1 text-[13px] text-ink-faint">
+            Kan stå tom hvis det ikke er noe fast tidspunkt.
+          </p>
+        </div>
+
+        <div>
+          <label htmlFor="categoryId" className={label}>
+            Kategori
           </label>
           <select
             id="categoryId"
@@ -117,7 +139,7 @@ function Fields({
             required
             defaultValue={categories[0]?.id ?? ""}
             onChange={(e) => setMakingNew(e.target.value === NEW_CATEGORY)}
-            className="mt-1.5 block w-full rounded-2xl border border-line bg-paper px-4 py-3 outline-none focus:border-accent"
+            className={field}
           >
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -129,34 +151,9 @@ function Fields({
         </div>
       </div>
 
-      <div className="mt-4">
-        <label
-          htmlFor="subjectId"
-          className="text-[15px] font-medium text-ink-soft"
-        >
-          Hvem gjelder det
-        </label>
-        <select
-          id="subjectId"
-          name="subjectId"
-          defaultValue={WHOLE_FAMILY}
-          className="mt-1.5 block w-full rounded-2xl border border-line bg-paper px-4 py-3 outline-none focus:border-accent"
-        >
-          <option value={WHOLE_FAMILY}>Hele familien</option>
-          {members.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {makingNew ? (
         <div className="mt-4">
-          <label
-            htmlFor="newCategory"
-            className="text-[15px] font-medium text-ink-soft"
-          >
+          <label htmlFor="newCategory" className={label}>
             Navn på ny kategori
           </label>
           <input
@@ -167,26 +164,26 @@ function Fields({
             required
             maxLength={40}
             placeholder="Trening, korps, besteforeldre …"
-            className="mt-1.5 block w-full rounded-2xl border border-line bg-paper px-4 py-3 outline-none focus:border-accent"
+            className={field}
           />
           <p className="mt-1 px-1 text-[13px] text-ink-faint">
-            Den får en farge automatisk og dukker opp i lista neste gang.
+            Den deles med beskjedene, og får en farge automatisk.
           </p>
         </div>
       ) : null}
 
       <div className="mt-4">
-        <label htmlFor="text" className="text-[15px] font-medium text-ink-soft">
-          Beskjed
+        <label htmlFor="text" className={label}>
+          Hva
         </label>
-        <textarea
+        <input
           id="text"
           name="text"
-          rows={3}
+          type="text"
           required
-          maxLength={1000}
-          placeholder="Gymtøy, tur, foreldremøte …"
-          className="mt-1.5 block w-full resize-none rounded-2xl border border-line bg-paper px-4 py-3 leading-relaxed outline-none focus:border-accent"
+          maxLength={200}
+          placeholder="Trening, korps, svømming …"
+          className={field}
         />
       </div>
     </>

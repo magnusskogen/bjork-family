@@ -61,6 +61,7 @@ export default async function Page({
         id: true,
         date: true,
         text: true,
+        member: { select: { name: true } },
         category: { select: { id: true, name: true, color: true } },
       },
       orderBy: [{ category: { sortOrder: "asc" } }, { createdAt: "asc" }],
@@ -114,6 +115,7 @@ export default async function Page({
       id: notice.id,
       category: notice.category,
       text: notice.text,
+      who: notice.member?.name ?? null,
     });
     noticesByDay.set(key, list);
   }

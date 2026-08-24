@@ -68,6 +68,7 @@ Kopier `.env.example` til `.env.local` og fyll inn:
 | `DIRECT_URL`   | Neon, direct connection. Brukes bare av `prisma migrate`.         |
 | `FAMILY_PIN`   | Den delte koden familien logger inn med.                          |
 | `AUTH_SECRET`  | Tilfeldig streng, minst 16 tegn. Signerer innloggingscookien.     |
+| `ANTHROPIC_API_KEY` | Leser opplastede lekseplaner. Valgfri — uten den virker resten av appen som før. |
 
 ```bash
 cp .env.example .env.local
