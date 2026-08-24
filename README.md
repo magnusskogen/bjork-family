@@ -62,12 +62,12 @@ npm test
 
 Kopier `.env.example` til `.env.local` og fyll inn:
 
-| Variabel       | Hva det er                                                        |
-| -------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL` | Neon, pooled connection. Brukes av appen.                         |
-| `DIRECT_URL`   | Neon, direct connection. Brukes bare av `prisma migrate`.         |
-| `FAMILY_PIN`   | Den delte koden familien logger inn med.                          |
-| `AUTH_SECRET`  | Tilfeldig streng, minst 16 tegn. Signerer innloggingscookien.     |
+| Variabel            | Hva det er                                                                       |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | Neon, pooled connection. Brukes av appen.                                        |
+| `DIRECT_URL`        | Neon, direct connection. Brukes bare av `prisma migrate`.                        |
+| `FAMILY_PIN`        | Den delte koden familien logger inn med.                                         |
+| `AUTH_SECRET`       | Tilfeldig streng, minst 16 tegn. Signerer innloggingscookien.                    |
 | `ANTHROPIC_API_KEY` | Leser opplastede lekseplaner. Valgfri — uten den virker resten av appen som før. |
 
 ```bash
@@ -94,15 +94,15 @@ neste spør hvem du er.
 
 ## Skript
 
-| Kommando             | Hva det gjør                                       |
-| -------------------- | -------------------------------------------------- |
-| `npm run dev`        | Utviklingsserver                                   |
-| `npm run build`      | `prisma generate` + produksjonsbygg                |
-| `npm test`           | Enhetstester for ukelogikken                       |
+| Kommando             | Hva det gjør                                        |
+| -------------------- | --------------------------------------------------- |
+| `npm run dev`        | Utviklingsserver                                    |
+| `npm run build`      | `prisma generate` + produksjonsbygg                 |
+| `npm test`           | Enhetstester for ukelogikken                        |
 | `npm run db:migrate` | Ny migrasjon under utvikling (`prisma migrate dev`) |
-| `npm run db:deploy`  | Kjør migrasjoner (`prisma migrate deploy`)         |
-| `npm run db:seed`    | Legg inn familie og startkategorier (idempotent)   |
-| `npm run db:studio`  | Prisma Studio                                      |
+| `npm run db:deploy`  | Kjør migrasjoner (`prisma migrate deploy`)          |
+| `npm run db:seed`    | Legg inn familie og startkategorier (idempotent)    |
+| `npm run db:studio`  | Prisma Studio                                       |
 
 ## Deploy på Vercel
 
@@ -191,3 +191,5 @@ må navnet rettes direkte i basen (`npm run db:studio`).
 `PendingNotice` står i schemaet uten UI eller logikk. Den er klargjort for
 automatisk uttrekk av beskjeder senere. I denne versjonen legges alt inn
 manuelt, og det finnes ingen e-postintegrasjon.
+
+Heii
